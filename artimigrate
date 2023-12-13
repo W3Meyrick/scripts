@@ -64,7 +64,8 @@ copy_artifacts() {
 
     for artifact in $(list_artifacts "$source_url" "$source_repo"); do
         echo "Copying: $artifact"
-        curl -X COPY -H "Authorization: Bearer $ARTI3_KEY" "$source_url/$source_repo/$artifact" -H "Destination: $target_url/$target_repo/$artifact"
+        artifact_path=$(echo "$artifact" | sed 's#/$##')  # Remove trailing slash, if any
+        curl -X COPY -H "Authorization: Bearer $ARTI3_KEY" "$source_url/$source_repo/$artifact_path" -H "Destination: $target_url/$target_repo/$artifact_path"
     done
 }
 
