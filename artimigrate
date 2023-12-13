@@ -3,11 +3,11 @@
 set -e
 
 usage() {
-    echo "Usage: $0 -s SOURCE_ARTIFACTORY_URL -t TARGET_ARTIFACTORY_URL [-k ARTI3_KEY] -sr SOURCE_REPO -tr TARGET_REPO"
+    echo "Usage: $0 -s SOURCE_ARTIFACTORY_URL -t TARGET_ARTIFACTORY_URL -kt TARGET_API_KEY -sr SOURCE_REPO -tr TARGET_REPO"
     exit 1
 }
 
-while getopts ":s:t:k:sr:tr:" opt; do
+while getopts ":s:t:kt:sr:tr:" opt; do
     case ${opt} in
         s)
             SOURCE_ARTIFACTORY_URL=${OPTARG}
@@ -15,8 +15,8 @@ while getopts ":s:t:k:sr:tr:" opt; do
         t)
             TARGET_ARTIFACTORY_URL=${OPTARG}
             ;;
-        k)
-            ARTI3_KEY=${OPTARG}
+        kt)
+            TARGET_API_KEY=${OPTARG}
             ;;
         sr)
             SOURCE_REPO=${OPTARG}
@@ -36,36 +36,22 @@ while getopts ":s:t:k:sr:tr:" opt; do
 done
 
 # Validate required options
-if [[ -z $SOURCE_ARTIFACTORY_URL && -z $TARGET_ARTIFACTORY_URL && -z $SOURCE_REPO && -z $TARGET_REPO ]]; then
+if [[ -z $SOURCE_ARTIFACTORY_URL || -z $TARGET_ARTIFACTORY_URL || -z $TARGET_REPO ]]; then
     echo "Missing required options!"
     usage
 fi
 
-# If ARTI3_KEY is not set, prompt for it
-if [[ -z $ARTI3_KEY ]]; then
-    read -sp "Enter Artifactory API key: " ARTI3_KEY
-    echo
-fi
-
 # Function to list all artifacts in a repository
 list_artifacts() {
-    local repo_url="$1"
-    local repo_name="$2"
-
-    curl -sS -H "Authorization: Bearer $ARTI3_KEY" "$repo_url/$repo_name/" | grep -oP '(?<=href=")[^"]+(?=")'
+    curl -sS "$SOURCE_ARTIFACTORY_URL/$SOURCE_REPO/" | grep -oP '(?<=href=")[^"]+(?=")'
 }
 
 # Function to copy artifacts from source to target repository
 copy_artifacts() {
-    local source_url="$1"
-    local target_url="$2"
-    local source_repo="$3"
-    local target_repo="$4"
-
-    for artifact in $(list_artifacts "$source_url" "$source_repo"); do
+    for artifact in $(list_artifacts); do
         echo "Copying: $artifact"
         artifact_path=$(echo "$artifact" | sed 's#/$##')  # Remove trailing slash, if any
-        curl -X COPY -H "Authorization: Bearer $ARTI3_KEY" "$source_url/$source_repo/$artifact_path" -H "Destination: $target_url/$target_repo/$artifact_path"
+        curl -X COPY -H "Authorization: Bearer $TARGET_API_KEY" "$SOURCE_ARTIFACTORY_URL/$SOURCE_REPO/$artifact_path" -H "Destination: $TARGET_ARTIFACTORY_URL/$TARGET_REPO/$artifact_path"
     done
 }
 
@@ -74,10 +60,10 @@ migrate_artifacts() {
     echo "Migrating artifacts from $SOURCE_ARTIFACTORY_URL/$SOURCE_REPO to $TARGET_ARTIFACTORY_URL/$TARGET_REPO"
 
     # Create the target repository if it doesn't exist
-    curl -X PUT -H "Authorization: Bearer $ARTI3_KEY" "$TARGET_ARTIFACTORY_URL/api/repositories/$TARGET_REPO"
+    curl -X PUT -H "Authorization: Bearer $TARGET_API_KEY" "$TARGET_ARTIFACTORY_URL/api/repositories/$TARGET_REPO"
 
     # Copy artifacts
-    copy_artifacts "$SOURCE_ARTIFACTORY_URL/api/storage" "$TARGET_ARTIFACTORY_URL/api/storage" "$SOURCE_REPO" "$TARGET_REPO"
+    copy_artifacts
 
     echo "Migration complete!"
 }
