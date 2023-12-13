@@ -36,7 +36,7 @@ while getopts ":s:t:k:sr:tr:" opt; do
 done
 
 # Validate required options
-if [[ -z $SOURCE_ARTIFACTORY_URL ]] || [[ -z $TARGET_ARTIFACTORY_URL ]] || [[ -z $SOURCE_REPO ]] || [[ -z $TARGET_REPO ]]; then
+if [[ -z $SOURCE_ARTIFACTORY_URL && -z $TARGET_ARTIFACTORY_URL && -z $SOURCE_REPO && -z $TARGET_REPO ]]; then
     echo "Missing required options!"
     usage
 fi
