@@ -1,3 +1,4 @@
+```json
 [
     {
       "project": "your-project-1",
@@ -12,3 +13,4 @@
       "family": "your-family-3"
     }
   ]
+```
