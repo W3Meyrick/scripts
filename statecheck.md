@@ -38,3 +38,31 @@ done
 
 # Delete the temporary file
 rm "$tmp_file"
+
+
+
+#!/bin/bash
+
+# Path to your Terraform state file
+STATE_FILE="terraform.tfstate"
+
+# Extract resource addresses from the Terraform state file
+RESOURCE_ADDRESSES=$(jq -r '.resources[].instances[].attributes."address"' "$STATE_FILE")
+
+# Loop through each resource address
+for RESOURCE_ADDRESS in $RESOURCE_ADDRESSES; do
+    # Extract the resource type and name from the address
+    RESOURCE_TYPE=$(echo "$RESOURCE_ADDRESS" | awk -F '.' '{print $1}')
+    RESOURCE_NAME=$(echo "$RESOURCE_ADDRESS" | awk -F '.' '{print $2}')
+
+    # Find the configuration files containing the resource
+    CONFIG_FILES=$(grep -l -r --include="*.tf" "\"$RESOURCE_TYPE\" \"$RESOURCE_NAME\"" .)
+
+    # Print the results
+    if [ -n "$CONFIG_FILES" ]; then
+        echo "Resource $RESOURCE_TYPE.$RESOURCE_NAME found in the following configuration files:"
+        echo "$CONFIG_FILES"
+    else
+        echo "Resource $RESOURCE_TYPE.$RESOURCE_NAME not found in any configuration files."
+    fi
+done
