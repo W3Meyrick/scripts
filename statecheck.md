@@ -40,29 +40,36 @@ done
 rm "$tmp_file"
 
 
-
 #!/bin/bash
 
-# Path to your Terraform state file
-STATE_FILE="terraform.tfstate"
+# Get the current working directory
+cwd=$(pwd)
 
-# Extract resource addresses from the Terraform state file
-RESOURCE_ADDRESSES=$(jq -r '.resources[].instances[].attributes."address"' "$STATE_FILE")
+# Find all Terraform files in the current working directory
+terraform_files=$(find "$cwd" -name "*.tf")
 
-# Loop through each resource address
-for RESOURCE_ADDRESS in $RESOURCE_ADDRESSES; do
-    # Extract the resource type and name from the address
-    RESOURCE_TYPE=$(echo "$RESOURCE_ADDRESS" | awk -F '.' '{print $1}')
-    RESOURCE_NAME=$(echo "$RESOURCE_ADDRESS" | awk -F '.' '{print $2}')
+# Get the Terraform state file
+state_file="$cwd/terraform.tfstate"
 
-    # Find the configuration files containing the resource
-    CONFIG_FILES=$(grep -l -r --include="*.tf" "\"$RESOURCE_TYPE\" \"$RESOURCE_NAME\"" .)
+# Extract resources and modules from the Terraform state file
+resources_and_modules=$(terraform state list)
 
-    # Print the results
-    if [ -n "$CONFIG_FILES" ]; then
-        echo "Resource $RESOURCE_TYPE.$RESOURCE_NAME found in the following configuration files:"
-        echo "$CONFIG_FILES"
-    else
-        echo "Resource $RESOURCE_TYPE.$RESOURCE_NAME not found in any configuration files."
-    fi
+# Create an associative array to store Terraform files with resources or modules
+declare -A matching_files
+
+# Iterate over each Terraform file
+for terraform_file in $terraform_files; do
+    # Check if any resource or module in the Terraform file exists in the state
+    while read -r item; do
+        if grep -q "$item" <<< "$resources_and_modules"; then
+            matching_files["$terraform_file"]=1
+            break
+        fi
+    done < <(grep -Eo 'resource|module\s+"\w+"' "$terraform_file" | cut -d '"' -f 2)
+done
+
+# Print matching Terraform files
+echo "Matching Terraform files:"
+for matching_file in "${!matching_files[@]}"; do
+    echo "$matching_file"
 done
