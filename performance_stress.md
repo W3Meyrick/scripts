@@ -1,14 +1,14 @@
-#Performance and Stress Testing Documentation
+# Performance and Stress Testing Documentation
 
-##Strategy
+## Strategy
 
-###Introduction:
+### Introduction:
 The objective of this strategy is to conduct stress and performance testing on the Google Cloud Platform (GCP) Shared Services, including API proxies (Squid), API forwarders (nginx transparent proxies), and DNS (unbound). These services are critical components providing access to the bank's GCP cloud platform. All services are deployed on Google Compute Managed Instance Groups to ensure scalability and reliability.
 
-###Objective:
+### Objective:
 This testing aims to evaluate the performance capabilities of the GCP Shared Services in a single-instance scenario. The chosen test tool for this purpose is Locust. The types of tests to be performed include load testing, stress testing, and endurance testing to assess the performance and scalability of the shared services.
 
-###Application Functionality and Business Processes Supported:
+### Application Functionality and Business Processes Supported:
 
 API Proxies (Squid): These proxies serve as gateways for users to access the cloud platform securely from on-premises locations. They handle incoming requests, provide caching, and enforce access controls.
 API Forwarders (nginx Transparent Proxies): These forwarders facilitate access to Google's APIs from within the cloud platform. They optimize network traffic and enhance performance by transparently intercepting and forwarding requests.
@@ -30,10 +30,10 @@ Performance and Stress Test Process:
 - Stress Testing: Increase the query rate to the Unbound DNS servers to determine their maximum capacity. Monitor for any signs of DNS resolution failures or increased response times under stress.
 - Endurance Testing: Keep a consistent load on the Unbound DNS servers for an extended period to ensure they maintain stable performance and do not exhibit any memory leaks or other issues over time.
 
-###Conclusion:
+### Conclusion:
 By conducting comprehensive performance and stress testing on the GCP Shared Services, including API proxies, API forwarders, and DNS services, we aim to identify any performance bottlenecks, scalability limitations, or stability concerns. The insights gained from these tests will inform optimizations and improvements to ensure the reliability and efficiency of the bank's GCP cloud platform.
 
-##Process
+## Process
 
 1. API Proxies (Squid):
 
@@ -94,7 +94,7 @@ By conducting comprehensive performance and stress testing on the GCP Shared Ser
   - Analyze performance metrics to identify latency issues or capacity constraints.
   - By following this actionable plan, you can effectively conduct stress and performance testing for each service using Locust and Python scripts tailored to the specific requirements of API proxies, API forwarders, and DNS services.
 
-##Technical Steps:
+## Technical Steps:
 
 1. API Proxies (Squid) - squid_proxy_test.py:
 
