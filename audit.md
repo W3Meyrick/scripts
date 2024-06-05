@@ -1,3 +1,4 @@
+```bash
 ---
 - name: Manage /etc/cron.d/audit2s3.cron and restart crond
   hosts: all
@@ -26,3 +27,4 @@
       shell: |
         ps aux | grep '/usr/bin/python2 /usr/bin/aws s3 sync' | grep -v grep | awk '{print $2}' | xargs -r kill
       ignore_errors: yes
+```
