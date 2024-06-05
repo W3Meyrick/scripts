@@ -45,13 +45,13 @@ Example Report:
 
 ## Objective
 
-The objective of this report is to provide detailed insights into the performance testing of the Squid proxy service, a critical component of the bank's GCP shared services. The aim is to assess the proxy's ability to handle various loads and user scenarios, determine its capacity limits, and identify any performance bottlenecks. This testing ensures that the Squid proxy service can reliably support business operations by enabling secure and efficient access to the cloud platform from on-premises locations. Locust was used as the performance testing tool to execute and analyze the tests.
+The objective of this report is to provide detailed insights into the performance testing of the Squid proxy service, a critical component of the bank's GCP shared services. The aim is to assess the proxy's ability to handle various loads and user scenarios, determine its capacity limits, and identify any performance bottlenecks. This testing ensures that the Squid proxy service can reliably support business operations by enabling secure and efficient access to the cloud platform from on-premises locations. Locust was used as the performance testing tool to execute and analyse the tests.
 
 ## Performance Test Summary (Results and Findings)
 
 ### Executive Summary
 
-This performance test assessed the Squid proxy service's ability to handle various loads and user scenarios using Locust. The tests included load testing, stress testing, and endurance testing. The results showed that the Squid proxy service meets the expected performance criteria under normal and peak loads but showed signs of degradation under extreme stress conditions. Key issues identified include increased response times and occasional timeouts under maximum load. Recommendations for optimization include enhancing resource allocation and tuning Squid configurations for better performance.
+This performance test assessed the Squid proxy service's ability to handle various loads and user scenarios using Locust. The tests included load testing, stress testing, and endurance testing. The results showed that the Squid proxy service meets the expected performance criteria under normal and peak loads but showed signs of degradation under extreme stress conditions. Key issues identified include increased response times and occasional timeouts under maximum load. Recommendations for optimisation include enhancing resource allocation and tuning Squid configurations for better performance.
 
 ### Test Summary
 
@@ -87,7 +87,7 @@ Overall, the Squid proxy service performed well under typical and peak load cond
 2. Occasional timeouts under stress conditions.
 
 **Recommendations:**
-1. Optimize Squid configuration for better performance under high load.
+1. Optimise Squid configuration for better performance under high load.
 2. Increase resource allocation (CPU, memory) to the Squid proxy instances.
 3. Implement monitoring and auto-scaling to handle peak loads effectively.
 
@@ -122,4 +122,4 @@ The Squid proxy service provides secure and efficient access to the bank's GCP c
 
 ## Conclusion
 
-The Squid proxy service generally meets performance expectations under normal and peak operating conditions, ensuring reliable access to the bank's GCP cloud platform. Some performance issues were identified under extreme load scenarios, which can be mitigated through recommended optimizations. Regular monitoring and scaling strategies should be implemented to ensure consistent performance and support business continuity.
+The Squid proxy service generally meets performance expectations under normal and peak operating conditions, ensuring reliable access to the bank's GCP cloud platform. Some performance issues were identified under extreme load scenarios, which can be mitigated through recommended optimisations. Regular monitoring and scaling strategies should be implemented to ensure consistent performance and support business continuity.
