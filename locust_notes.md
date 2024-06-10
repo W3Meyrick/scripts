@@ -4,18 +4,18 @@
 ```python
 import locust
 import requests
-import json
+import subprocess
 
-# Function to get an access token from the metadata server
+# Function to get an access token using gcloud
 def get_access_token():
-    metadata_server_url = "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token"
-    headers = {"Metadata-Flavor": "Google"}
-    
-    response = requests.get(metadata_server_url, headers=headers)
-    response.raise_for_status()  # Raise an error for bad status codes
-
-    access_token = response.json().get("access_token")
-    return access_token
+    result = subprocess.run(
+        ["gcloud", "auth", "print-access-token"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=True
+    )
+    return result.stdout.strip()
 
 # Locust task set
 class GCPUserBehavior(locust.TaskSet):
