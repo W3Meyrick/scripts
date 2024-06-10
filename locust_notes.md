@@ -1,3 +1,7 @@
+
+
+
+```python
 import locust
 
 # Locust task set
@@ -30,7 +34,8 @@ class GCPUserBehavior(locust.TaskSet):
 class GCPUser(locust.HttpUser):
     tasks = [GCPUserBehavior]
     wait_time = locust.between(1, 5)
+```
 
-
-
+```bash
 sudo locust -f locustfile.py --host=https://www.googleapis.com --web-port 80
+```
