@@ -6,6 +6,9 @@ import locust
 import requests
 import subprocess
 
+# Define the proxy IP address as a variable
+PROXY_IP = "192.168.1.10"
+
 # Function to get an access token using gcloud
 def get_access_token():
     result = subprocess.run(
@@ -35,7 +38,7 @@ class GCPUserBehavior(locust.TaskSet):
         }
 
         # Make a GET request to the Compute Engine API via proxy
-        with self.client.get(compute_api_url, headers=headers, proxies={"http": "http://192.168.1.10:3128", "https": "http://192.168.1.10:3128"}, catch_response=True) as response:
+        with self.client.get(compute_api_url, headers=headers, proxies={"http": f"http://{PROXY_IP}:3128", "https": f"http://{PROXY_IP}:3128"}, catch_response=True) as response:
             if response.status_code != 200:
                 response.failure(f"Failed with status code {response.status_code}")
             else:
@@ -56,7 +59,7 @@ class GCPUserBehavior(locust.TaskSet):
         }
 
         # Make a GET request to the Storage API via proxy
-        with self.client.get(storage_api_url, headers=headers, proxies={"http": "http://192.168.1.10:3128", "https": "http://192.168.1.10:3128"}, catch_response=True) as response:
+        with self.client.get(storage_api_url, headers=headers, proxies={"http": f"http://{PROXY_IP}:3128", "https": f"http://{PROXY_IP}:3128"}, catch_response=True) as response:
             if response.status_code != 200:
                 response.failure(f"Failed with status code {response.status_code}")
             else:
