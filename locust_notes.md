@@ -7,6 +7,7 @@ import subprocess
 
 # Define the proxy IP address as a variable
 PROXY_IP = "192.168.1.10"
+PROXY_PORT = "3128"
 
 # Function to get an access token using gcloud
 def get_access_token():
@@ -38,11 +39,11 @@ class ComputeEngineBehavior(locust.TaskSet):
         }
 
         # Make a GET request to the Compute Engine API via proxy
-        response = self.client.get(compute_api_url, headers=headers, proxies={"http": f"http://{PROXY_IP}:3128"}, verify=False)
-        if response.status_code != 200:
-            response.failure(f"Failed with status code {response.status_code}")
-        else:
-            response.success()
+        with self.client.get(compute_api_url, headers=headers, catch_response=True) as response:
+            if response.status_code != 200:
+                response.failure(f"Failed with status code {response.status_code}")
+            else:
+                response.success()
 
 # Locust task set for Storage API
 class StorageBehavior(locust.TaskSet):
@@ -63,11 +64,11 @@ class StorageBehavior(locust.TaskSet):
         }
 
         # Make a GET request to the Storage API via proxy
-        response = self.client.get(storage_api_url, headers=headers, proxies={"http": f"http://{PROXY_IP}:3128"}, verify=False)
-        if response.status_code != 200:
-            response.failure(f"Failed with status code {response.status_code}")
-        else:
-            response.success()
+        with self.client.get(storage_api_url, headers=headers, catch_response=True) as response:
+            if response.status_code != 200:
+                response.failure(f"Failed with status code {response.status_code}")
+            else:
+                response.success()
 
 # User class for Compute Engine
 class ComputeEngineUser(locust.HttpUser):
@@ -75,11 +76,29 @@ class ComputeEngineUser(locust.HttpUser):
     host = "https://compute.googleapis.com"
     wait_time = locust.between(1, 5)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.client.proxies = {
+            "http": f"http://{PROXY_IP}:{PROXY_PORT}",
+            "https": f"http://{PROXY_IP}:{PROXY_PORT}",
+        }
+
 # User class for Storage
 class StorageUser(locust.HttpUser):
     tasks = [StorageBehavior]
     host = "https://storage.googleapis.com"
     wait_time = locust.between(1, 5)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.client.proxies = {
+            "http": f"http://{PROXY_IP}:{PROXY_PORT}",
+            "https": f"http://{PROXY_IP}:{PROXY_PORT}",
+        }
+
+if __name__ == "__main__":
+    import os
+    os.system("locust -f gcp_test_script.py --web-port 80"
 ```
 
 ```bash
