@@ -3,7 +3,6 @@
 
 ```python
 import locust
-import requests
 import subprocess
 
 # Define the proxy IP address as a variable
@@ -20,53 +19,66 @@ def get_access_token():
     )
     return result.stdout.strip()
 
-# Locust task set
-class GCPUserBehavior(locust.TaskSet):
+# Locust task set for Compute Engine API
+class ComputeEngineBehavior(locust.TaskSet):
+
+    def on_start(self):
+        # Get access token
+        self.access_token = get_access_token()
 
     @locust.task
     def compute_api_test(self):
-        # Replace with your Compute Engine API URL
-        compute_api_url = "https://www.googleapis.com/compute/v1/projects/YOUR_PROJECT_ID/zones/YOUR_ZONE/instances"
-        
-        # Get access token
-        access_token = get_access_token()
+        # Compute Engine API URL (relative)
+        compute_api_url = "/compute/v1/projects/YOUR_PROJECT_ID/zones/YOUR_ZONE/instances"
         
         # Prepare headers with the access token
         headers = {
-            "Authorization": f"Bearer {access_token}",
+            "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json"
         }
 
         # Make a GET request to the Compute Engine API via proxy
-        with self.client.get(compute_api_url, headers=headers, proxies={"http": f"http://{PROXY_IP}:3128", "https": f"http://{PROXY_IP}:3128"}, catch_response=True) as response:
-            if response.status_code != 200:
-                response.failure(f"Failed with status code {response.status_code}")
-            else:
-                response.success()
+        response = self.client.get(compute_api_url, headers=headers, proxies={"http": f"http://{PROXY_IP}:3128"}, verify=False)
+        if response.status_code != 200:
+            response.failure(f"Failed with status code {response.status_code}")
+        else:
+            response.success()
+
+# Locust task set for Storage API
+class StorageBehavior(locust.TaskSet):
+
+    def on_start(self):
+        # Get access token
+        self.access_token = get_access_token()
 
     @locust.task
     def storage_api_test(self):
-        # Replace with your Storage API URL
-        storage_api_url = "https://www.googleapis.com/storage/v1/b/YOUR_BUCKET_NAME/o"
-
-        # Get access token
-        access_token = get_access_token()
+        # Storage API URL (relative)
+        storage_api_url = "/storage/v1/b/YOUR_BUCKET_NAME/o"
 
         # Prepare headers with the access token
         headers = {
-            "Authorization": f"Bearer {access_token}",
+            "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json"
         }
 
         # Make a GET request to the Storage API via proxy
-        with self.client.get(storage_api_url, headers=headers, proxies={"http": f"http://{PROXY_IP}:3128", "https": f"http://{PROXY_IP}:3128"}, catch_response=True) as response:
-            if response.status_code != 200:
-                response.failure(f"Failed with status code {response.status_code}")
-            else:
-                response.success()
+        response = self.client.get(storage_api_url, headers=headers, proxies={"http": f"http://{PROXY_IP}:3128"}, verify=False)
+        if response.status_code != 200:
+            response.failure(f"Failed with status code {response.status_code}")
+        else:
+            response.success()
 
-class GCPUser(locust.HttpUser):
-    tasks = [GCPUserBehavior]
+# User class for Compute Engine
+class ComputeEngineUser(locust.HttpUser):
+    tasks = [ComputeEngineBehavior]
+    host = "https://compute.googleapis.com"
+    wait_time = locust.between(1, 5)
+
+# User class for Storage
+class StorageUser(locust.HttpUser):
+    tasks = [StorageBehavior]
+    host = "https://storage.googleapis.com"
     wait_time = locust.between(1, 5)
 ```
 
