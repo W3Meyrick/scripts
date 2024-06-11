@@ -5,6 +5,8 @@
 import locust
 import subprocess
 import random
+import os
+import multiprocessing
 
 # Define the proxy IP address as a variable
 PROXY_IP = "192.168.1.10"
@@ -47,8 +49,8 @@ class ComputeEngineBehavior(locust.TaskSet):
         project = random.choice(list(PROJECT_ZONE_MAP.keys()))
         zone = random.choice(PROJECT_ZONE_MAP[project])
         
-        # Compute Engine API URL (relative)
-        compute_api_url = f"/compute/v1/projects/{project}/zones/{zone}/instances"
+        # Compute Engine API URL (full URL)
+        compute_api_url = f"https://compute.googleapis.com/compute/v1/projects/{project}/zones/{zone}/instances"
         
         # Prepare headers with the access token
         headers = {
@@ -71,8 +73,8 @@ class StorageBehavior(locust.TaskSet):
         # Randomly select a storage bucket
         bucket = random.choice(STORAGE_BUCKETS)
         
-        # Storage API URL (relative)
-        storage_api_url = f"/storage/v1/b/{bucket}/o"
+        # Storage API URL (full URL)
+        storage_api_url = f"https://storage.googleapis.com/storage/v1/b/{bucket}/o"
 
         # Prepare headers with the access token
         headers = {
@@ -92,24 +94,32 @@ class ComputeEngineUser(locust.HttpUser):
     tasks = [ComputeEngineBehavior]
     host = "https://compute.googleapis.com"
     wait_time = locust.between(1, 5)
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.client.proxies = {
-            "http": f"http://{PROXY_IP}:{PROXY_PORT}",
-        }
+        self.client.proxies = {"http": f"http://{PROXY_IP}:{PROXY_PORT}", "https": f"http://{PROXY_IP}:{PROXY_PORT}"}
 
 # User class for Storage
 class StorageUser(locust.HttpUser):
     tasks = [StorageBehavior]
     host = "https://storage.googleapis.com"
     wait_time = locust.between(1, 5)
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.client.proxies = {
-            "http": f"http://{PROXY_IP}:{PROXY_PORT}",
-        }
+        self.client.proxies = {"http": f"http://{PROXY_IP}:{PROXY_PORT}", "https": f"http://{PROXY_IP}:{PROXY_PORT}"}
+
+# Function to start Locust with multiprocessing
+def start_locust_multi(num_processes, hatch_rate):
+    locust_cmd = f"locust -f {__file__} --headless --users 1 --hatch-rate {hatch_rate} --master"
+    for _ in range(num_processes - 1):
+        locust_cmd += f" --slave"
+    os.system(locust_cmd)
+
+if __name__ == "__main__":
+    num_processes = multiprocessing.cpu_count()  # Number of CPU cores
+    hatch_rate = 10  # Default hatch rate, will be overridden by the web console
+    start_locust_multi(num_processes, hatch_rate)
 ```
 
 ```bash
