@@ -4,6 +4,7 @@
 ```python
 import locust
 import subprocess
+import random
 
 # Define the proxy IP address as a variable
 PROXY_IP = "192.168.1.10"
@@ -20,21 +21,38 @@ def get_access_token():
     )
     return result.stdout.strip()
 
+# Retrieve the access token once and store it
+ACCESS_TOKEN = get_access_token()
+
+# Define the map of projects and zones
+PROJECT_ZONE_MAP = {
+    "project1": ["zone1a", "zone1b", "zone1c"],
+    "project2": ["zone2a", "zone2b", "zone2c"],
+    "project3": ["zone3a", "zone3b", "zone3c"],
+}
+
+# Define the list of storage buckets
+STORAGE_BUCKETS = [
+    "bucket1",
+    "bucket2",
+    "bucket3",
+]
+
 # Locust task set for Compute Engine API
 class ComputeEngineBehavior(locust.TaskSet):
 
-    def on_start(self):
-        # Get access token
-        self.access_token = get_access_token()
-
     @locust.task
     def compute_api_test(self):
+        # Randomly select a project and a zone
+        project = random.choice(list(PROJECT_ZONE_MAP.keys()))
+        zone = random.choice(PROJECT_ZONE_MAP[project])
+        
         # Compute Engine API URL (relative)
-        compute_api_url = "/compute/v1/projects/YOUR_PROJECT_ID/zones/YOUR_ZONE/instances"
+        compute_api_url = f"/compute/v1/projects/{project}/zones/{zone}/instances"
         
         # Prepare headers with the access token
         headers = {
-            "Authorization": f"Bearer {self.access_token}",
+            "Authorization": f"Bearer {ACCESS_TOKEN}",
             "Content-Type": "application/json"
         }
 
@@ -48,18 +66,17 @@ class ComputeEngineBehavior(locust.TaskSet):
 # Locust task set for Storage API
 class StorageBehavior(locust.TaskSet):
 
-    def on_start(self):
-        # Get access token
-        self.access_token = get_access_token()
-
     @locust.task
     def storage_api_test(self):
+        # Randomly select a storage bucket
+        bucket = random.choice(STORAGE_BUCKETS)
+        
         # Storage API URL (relative)
-        storage_api_url = "/storage/v1/b/YOUR_BUCKET_NAME/o"
+        storage_api_url = f"/storage/v1/b/{bucket}/o"
 
         # Prepare headers with the access token
         headers = {
-            "Authorization": f"Bearer {self.access_token}",
+            "Authorization": f"Bearer {ACCESS_TOKEN}",
             "Content-Type": "application/json"
         }
 
@@ -80,7 +97,6 @@ class ComputeEngineUser(locust.HttpUser):
         super().__init__(*args, **kwargs)
         self.client.proxies = {
             "http": f"http://{PROXY_IP}:{PROXY_PORT}",
-            "https": f"http://{PROXY_IP}:{PROXY_PORT}",
         }
 
 # User class for Storage
@@ -93,12 +109,7 @@ class StorageUser(locust.HttpUser):
         super().__init__(*args, **kwargs)
         self.client.proxies = {
             "http": f"http://{PROXY_IP}:{PROXY_PORT}",
-            "https": f"http://{PROXY_IP}:{PROXY_PORT}",
         }
-
-if __name__ == "__main__":
-    import os
-    os.system("locust -f gcp_test_script.py --web-port 80"
 ```
 
 ```bash
