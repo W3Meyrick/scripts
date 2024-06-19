@@ -14,6 +14,19 @@ pipeline {
     }
 
     stages {
+        stage('Validate Project') {
+            steps {
+                script {
+                    def project = params.PROJECT
+
+                    // Check if the project name ends with '-dev' or '-uat'
+                    if (!(project.endsWith('-dev') || project.endsWith('-uat'))) {
+                        error "This pipeline is only allowed for projects ending with '-dev' or '-uat'. Project ${project} is not allowed."
+                    }
+                }
+            }
+        }
+
         stage('Process SSH Key') {
             steps {
                 script {
