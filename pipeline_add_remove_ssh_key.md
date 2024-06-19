@@ -9,6 +9,10 @@ pipeline {
         string(name: 'PROJECT', defaultValue: '', description: 'Project name')
     }
 
+    environment {
+        GCS_BUCKET = 'your-fixed-bucket-name' // Replace with your actual GCS bucket name
+    }
+
     stages {
         stage('Process SSH Key') {
             steps {
@@ -46,6 +50,22 @@ pipeline {
                             --project=${project} \\
                             --metadata-from-file ssh-keys=${tempFile}
                     """
+
+                    // Create a date formatted backup file name
+                    def dateStr = new Date().format("yyyy-MM-dd")
+                    def backupFileName = "ssh-keys-backup-${project}-${dateStr}.txt"
+
+                    // Copy the temp file to the GCS bucket
+                    sh "gsutil cp ${tempFile} gs://${GCS_BUCKET}/${backupFileName}"
+
+                    // Remove old backups, keeping only the 10 most recent for the specific project
+                    def backups = sh(script: "gsutil ls gs://${GCS_BUCKET}/ssh-keys-backup-${project}-*.txt", returnStdout: true).trim().split('\n')
+                    if (backups.size() > 10) {
+                        def filesToDelete = backups.sort().take(backups.size() - 10)
+                        filesToDelete.each { file ->
+                            sh "gsutil rm ${file}"
+                        }
+                    }
 
                     // Clean up temporary file
                     sh "rm -f ${tempFile}"
