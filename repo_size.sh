@@ -14,7 +14,7 @@ for REPO in $REPOS; do
   TOTAL_SIZE=$((TOTAL_SIZE + REPO_SIZE))
 done
 
-# Convert size from KB to MB
-TOTAL_SIZE_MB=$((TOTAL_SIZE / 1024))
+# Convert size from KB to GB
+TOTAL_SIZE_GB=$(echo "scale=2; $TOTAL_SIZE / 1024 / 1024" | bc)
 
-echo "Total storage used by all repositories in the organization: $TOTAL_SIZE_MB MB"
+echo "Total storage used by all repositories in the organization: $TOTAL_SIZE_GB GB"
