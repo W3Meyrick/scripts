@@ -95,3 +95,25 @@
     - Transfer operational responsibilities to support/IT team
     - Conduct final review and create a post-project report
     - Schedule a project retrospective and finalize documentation
+
+```json
+policy = jsonencode({
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": aws_iam_role.s3_access_role.arn
+        },
+        "Action": [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ],
+        "Resource": [
+          "arn:aws:s3:::${var.bucket_name}", # Bucket itself
+          "arn:aws:s3:::${var.bucket_name}/*" # Objects within the bucket
+        ]
+      }
+    ]
+  })
+```
