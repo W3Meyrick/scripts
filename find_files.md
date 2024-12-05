@@ -86,13 +86,15 @@ Stricter version:
 # Function to extract version from a file name
 extract_version() {
   local filename="$1"
-  echo "$filename" | grep -oP '\d+(\.\d+)*' | head -1
+  # Use regex to capture the first version-like pattern (e.g., 3.2.0)
+  echo "$filename" | grep -oP '\d+(\.\d+)+'
 }
 
 # Function to extract the base name (package name without the version)
 extract_base_name() {
   local filename="$1"
-  echo "$filename" | sed -E 's/-[0-9]+(\.[0-9]+)*\.jar$//'
+  # Remove the first occurrence of a version and any trailing parts
+  echo "$filename" | sed -E 's/-\d+(\.\d+)+.*\.jar$//'
 }
 
 # Compare two versions
