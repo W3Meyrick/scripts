@@ -151,19 +151,23 @@ while IFS= read -r jar_file; do
     continue
   fi
 
-  later_version_found=false
+  latest_version=""
+  latest_file_path=""
 
   # Search for files with the same base name
   for file in $(find "$search_dir" -type f -name "$base_name*.jar" 2>/dev/null); do
     current_version=$(extract_version "$(basename "$file")")
-    if [[ -n $current_version ]] && is_later_version "$original_version" "$current_version"; then
-      echo "$jar_file > $file"
-      later_version_found=true
-      break
+    if [[ -n $current_version && "$current_version" != "$original_version" ]]; then
+      if [[ -z $latest_version || is_later_version "$latest_version" "$current_version" ]]; then
+        latest_version="$current_version"
+        latest_file_path="$file"
+      fi
     fi
   done
 
-  if [[ $later_version_found == false ]]; then
+  if [[ -n $latest_file_path ]]; then
+    echo "$jar_file > $latest_file_path"
+  else
     echo "$jar_file > No later version found"
   fi
 done < "$jar_list_file"
