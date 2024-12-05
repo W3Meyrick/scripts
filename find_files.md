@@ -157,7 +157,7 @@ while IFS= read -r jar_file; do
   latest_file_path=""
 
   # Search for files with the same base name
-  for file in $(find "$search_dir" -type f -name "$base_name*.jar" 2>/dev/null); do
+  while IFS= read -r file; do
     current_version=$(extract_version "$(basename "$file")")
     if [[ -n $current_version && "$current_version" != "$original_version" ]]; then
       if [[ -z $latest_version || is_later_version "$latest_version" "$current_version" ]]; then
@@ -165,7 +165,7 @@ while IFS= read -r jar_file; do
         latest_file_path="$file"
       fi
     fi
-  done
+  done < <(find "$search_dir" -type f -name "$base_name*.jar" 2>/dev/null)
 
   if [[ -n $latest_file_path ]]; then
     echo "$jar_file > $latest_file_path"
