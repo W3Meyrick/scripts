@@ -156,6 +156,7 @@ while IFS= read -r jar_file; do
 
   # Search for files with the same base name
   while IFS= read -r file; do
+    [[ -z "$file" ]] && continue  # Skip empty results
     current_version=$(extract_version "$(basename "$file")")
     if [[ -n "$current_version" && "$current_version" != "$original_version" ]]; then
       if [[ -z "$latest_version" || is_later_version "$latest_version" "$current_version" ]]; then
