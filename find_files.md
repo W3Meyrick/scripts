@@ -83,7 +83,7 @@ Stricter version:
 ```bash
 #!/bin/bash
 
-# Function to extract version from a file name
+# Function to extract the version number from a filename
 extract_version() {
   local filename="$1"
   echo "$filename" | grep -oP '\d+(\.\d+)+'
@@ -95,7 +95,7 @@ extract_base_name() {
   echo "$filename" | sed -E 's/-\d+(\.\d+)+.*\.jar$//'
 }
 
-# Compare two versions
+# Compare two versions (returns 0 if ver2 > ver1)
 is_later_version() {
   local ver1="$1"
   local ver2="$2"
@@ -104,11 +104,10 @@ is_later_version() {
   IFS='.' read -r -a ver1_parts <<< "$ver1"
   IFS='.' read -r -a ver2_parts <<< "$ver2"
 
-  # Compare each part
+  # Compare each part numerically
   for ((i = 0; i < ${#ver1_parts[@]} || i < ${#ver2_parts[@]}; i++)); do
     part1=${ver1_parts[i]:-0}
     part2=${ver2_parts[i]:-0}
-
     if ((part2 > part1)); then
       return 0
     elif ((part2 < part1)); then
@@ -116,8 +115,7 @@ is_later_version() {
     fi
   done
 
-  # If all parts are equal, return false
-  return 1
+  return 1 # Versions are equal
 }
 
 # Main logic
@@ -129,13 +127,14 @@ fi
 jar_list_file="$1"
 search_dir="$2"
 
+# Validate inputs
 if [[ ! -f "$jar_list_file" ]]; then
   echo "Error: JAR list file '$jar_list_file' not found!"
   exit 1
 fi
 
 if [[ ! -d "$search_dir" ]]; then
-  echo "Error: Search directory '$search_dir' is invalid!"
+  echo "Error: Search directory '$search_dir' not found!"
   exit 1
 fi
 
@@ -154,17 +153,16 @@ while IFS= read -r jar_file; do
   latest_version=""
   latest_file_path=""
 
-  # Search for files with the same base name
-  while IFS= read -r file; do
-    [[ -z "$file" ]] && continue  # Skip empty results
+  # Search for JARs with the same base name
+  find "$search_dir" -type f -name "$base_name*.jar" 2>/dev/null | while IFS= read -r file; do
     current_version=$(extract_version "$(basename "$file")")
     if [[ -n "$current_version" && "$current_version" != "$original_version" ]]; then
-      if [[ -z "$latest_version" || is_later_version "$latest_version" "$current_version" ]]; then
+      if [[ -z "$latest_version" ]] || is_later_version "$latest_version" "$current_version"; then
         latest_version="$current_version"
         latest_file_path="$file"
       fi
     fi
-  done < <(find "$search_dir" -type f -name "$base_name*.jar" 2>/dev/null)
+  done
 
   if [[ -n "$latest_file_path" ]]; then
     echo "$jar_file > $latest_file_path"
