@@ -1,6 +1,6 @@
 # Remediation Plan
 
-1. Build Release Tool to meet controls
+## 1. Build Release Tool to meet controls
 
  - Control 1: An approved valid change is required in order to make a release 
  - Control 2: Package must be referenced in the change ticket to make release 
@@ -16,7 +16,7 @@ Progress: POC Complete, further feature development required
 
 Timeline: Code completiong mid-Jan, comms third week of Jan, deploy and implement end of Jan
 
-2. Apply TPAM access to orchestration tool so that parameters can not be bypassed 
+## 2. Apply TPAM access to orchestration tool so that parameters can not be bypassed 
 
 Requirements: 
  - Design permissions model for non-priv (read), priv -GCP (job runner), and -SGP (job editor)
@@ -28,7 +28,7 @@ Progress: POC complete on Jenkins-Dev, permissions matrix to be designed and tes
 
 Timeline: Implement by 17th Jan
 
-3. Build environment aware continuous delivery tooling scoped to Shared Services within GOOGLE-FOUNDATION-PLATFORM 
+## 3. Build environment aware continuous delivery tooling scoped to Shared Services within GOOGLE-FOUNDATION-PLATFORM 
 
 Requirements: 
  - POC of Spinnaker for Shared Services in UAT 
