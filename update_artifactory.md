@@ -33,7 +33,7 @@ for REPO in */; do
     GIT_REMOTE_URL=$(git config --get remote.origin.url)
     GIT_BRANCH_URL="${GIT_REMOTE_URL/.git/}/-/tree/$BRANCH_NAME"
 
-    # Check if the branch already exists locally
+    # Check if the branch exists locally first
     if git rev-parse --verify "$BRANCH_NAME" &>/dev/null; then
         echo "Branch '$BRANCH_NAME' exists locally. Checking it out..."
         git checkout "$BRANCH_NAME"
@@ -51,7 +51,7 @@ for REPO in */; do
 
     # Find all occurrences of URLs containing the OLD_DOMAIN
     echo "Searching for URLs containing '$OLD_DOMAIN'..."
-    grep -rEo "https?://$OLD_DOMAIN[^\"]+" . | tee found_urls.txt
+    grep -rEo "https?://$OLD_DOMAIN[^\"]+" . | sort -u > found_urls.txt
 
     if [[ ! -s found_urls.txt ]]; then
         echo "No matching URLs found in $REPO. Skipping update..."
@@ -61,9 +61,9 @@ for REPO in */; do
     fi
 
     # Read each unique URL and prompt the user for a replacement
-    sort -u found_urls.txt | while read -r OLD_URL; do
+    while read -r OLD_URL; do
         echo "Found URL: $OLD_URL"
-        echo "Enter the updated URL:"
+        echo -n "Enter the updated URL: "
         read -r NEW_URL
 
         if [[ -n "$NEW_URL" ]]; then
@@ -74,7 +74,7 @@ for REPO in */; do
             # Perform the replacement in all files
             find . -type f -exec sed -i "s|$OLD_URL|$NEW_URL|g" {} +
         fi
-    done
+    done < found_urls.txt
 
     # Verify changes
     MODIFIED_FILES=$(git diff --name-only)
