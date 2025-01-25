@@ -33,8 +33,15 @@ for REPO in */; do
     GIT_REMOTE_URL=$(git config --get remote.origin.url)
     GIT_BRANCH_URL="${GIT_REMOTE_URL/.git/}/-/tree/$BRANCH_NAME"
 
-    # Checkout the target branch
-    git checkout -b "$BRANCH_NAME" || { echo "Failed to create branch in $REPO. Skipping..."; cd ..; continue; }
+    # Check if branch already exists on remote
+    git fetch origin "$BRANCH_NAME" &>/dev/null
+    if git rev-parse --verify "origin/$BRANCH_NAME" &>/dev/null; then
+        echo "Branch '$BRANCH_NAME' exists on remote. Checking it out..."
+        git checkout "$BRANCH_NAME"
+    else
+        echo "Branch '$BRANCH_NAME' does not exist. Creating new branch..."
+        git checkout -b "$BRANCH_NAME"
+    fi
 
     # Find all occurrences of URLs containing the OLD_DOMAIN
     echo "Searching for URLs containing '$OLD_DOMAIN'..."
