@@ -51,17 +51,16 @@ for REPO in */; do
 
     # Find all occurrences of URLs containing the OLD_DOMAIN
     echo "Searching for URLs containing '$OLD_DOMAIN'..."
-    grep -rEo "https?://$OLD_DOMAIN[^\"]+" . | sort -u > found_urls.txt
+    mapfile -t URLS < <(grep -rEo "https?://$OLD_DOMAIN[^\"]+" . | sort -u)
 
-    if [[ ! -s found_urls.txt ]]; then
+    if [[ ${#URLS[@]} -eq 0 ]]; then
         echo "No matching URLs found in $REPO. Skipping update..."
-        rm found_urls.txt
         cd ..
         continue
     fi
 
     # Read each unique URL and prompt the user for a replacement
-    while read -r OLD_URL; do
+    for OLD_URL in "${URLS[@]}"; do
         echo "Found URL: $OLD_URL"
         echo -n "Enter the updated URL: "
         read -r NEW_URL
@@ -74,7 +73,7 @@ for REPO in */; do
             # Perform the replacement in all files
             find . -type f -exec sed -i "s|$OLD_URL|$NEW_URL|g" {} +
         fi
-    done < found_urls.txt
+    done
 
     # Verify changes
     MODIFIED_FILES=$(git diff --name-only)
@@ -95,9 +94,6 @@ for REPO in */; do
     else
         echo "No changes detected in $REPO."
     fi
-
-    # Cleanup
-    rm found_urls.txt
 
     # Return to the parent directory
     cd ..
