@@ -139,9 +139,9 @@ for REPO in */; do
     GIT_REMOTE_URL=$(git config --get remote.origin.url)
     GIT_BRANCH_URL="${GIT_REMOTE_URL/.git/}/-/tree/$BRANCH_NAME"
 
-    # 🔍 Find ALL occurrences of `artifactory.ns1s.site.co.uk` (in any context)
+    # 🔍 Find **full occurrences** of `artifactory.ns1s.site.co.uk` (captures entire paths)
     echo "Searching for occurrences of '$OLD_DOMAIN'..."
-    mapfile -t URLS < <(grep -rIoh "\b$OLD_DOMAIN[^\s\"'<>]*" . | sort -u)
+    mapfile -t URLS < <(grep -rIoP "\bhttps?://?$OLD_DOMAIN[^\s\"'<>]*|(?<=\b)$OLD_DOMAIN[^\s\"'<>]*" . | sort -u)
 
     if [[ -z "${URLS[*]}" ]]; then
         echo "No matching occurrences found in $REPO. Skipping update..."
