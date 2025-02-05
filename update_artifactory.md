@@ -107,7 +107,7 @@ Alternative:
 ```bash
 #!/bin/bash
 
-# Old Artifactory domain (only a part of the URL)
+# Old Artifactory domain (without protocol)
 OLD_DOMAIN="artifactory.ns1s.site.co.uk"
 
 # Branch name for the update
@@ -139,12 +139,12 @@ for REPO in */; do
     GIT_REMOTE_URL=$(git config --get remote.origin.url)
     GIT_BRANCH_URL="${GIT_REMOTE_URL/.git/}/-/tree/$BRANCH_NAME"
 
-    # Find all occurrences of URLs containing the OLD_DOMAIN
-    echo "Searching for URLs containing '$OLD_DOMAIN'..."
-    mapfile -t URLS < <(grep -rEo "https?://$OLD_DOMAIN[^\"]+" . | sort -u)
+    # 🔍 Search for ANY occurrence of `artifactory.ns1s.site.co.uk` (with or without http(s)://)
+    echo "Searching for occurrences of '$OLD_DOMAIN'..."
+    mapfile -t URLS < <(grep -rIoh ".*$OLD_DOMAIN[^ \"'\<]+" . | sort -u)
 
     if [[ ${#URLS[@]} -eq 0 ]]; then
-        echo "No matching URLs found in $REPO. Skipping update..."
+        echo "No matching occurrences found in $REPO. Skipping update..."
         cd ..
         continue
     fi
@@ -153,8 +153,8 @@ for REPO in */; do
 
     # Collect replacements from the user
     for OLD_URL in "${URLS[@]}"; do
-        echo "Found URL: $OLD_URL"
-        echo -n "Enter the updated URL (or leave blank to keep it unchanged): "
+        echo "Found: $OLD_URL"
+        echo -n "Enter the updated value (or leave blank to keep it unchanged): "
         read -r NEW_URL
 
         if [[ -n "$NEW_URL" ]]; then
@@ -162,7 +162,7 @@ for REPO in */; do
         fi
     done
 
-    # Show a summary of changes before proceeding
+    # Show a summary of planned changes before proceeding
     echo "Summary of planned changes for $REPO:"
     for OLD_URL in "${!URL_MAP[@]}"; do
         echo "  - Replace: $OLD_URL"
@@ -178,7 +178,7 @@ for REPO in */; do
         continue
     fi
 
-    # Check if the branch exists locally first
+    # 🏷️ Check if the branch exists locally first
     if git rev-parse --verify "$BRANCH_NAME" &>/dev/null; then
         echo "Branch '$BRANCH_NAME' exists locally. Checking it out..."
         git checkout "$BRANCH_NAME"
@@ -194,7 +194,7 @@ for REPO in */; do
         fi
     fi
 
-    # Apply replacements
+    # 🛠 Apply replacements
     echo "Applying changes..."
     for OLD_URL in "${!URL_MAP[@]}"; do
         find . -type f -exec sed -i "s|$OLD_URL|${URL_MAP[$OLD_URL]}|g" {} +
