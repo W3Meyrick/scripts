@@ -1,0 +1,8 @@
+# ✅ Testing Guidance – Cloud Platform Uplift (GCP / AWS / Azure)
+
+| Area                         | Unit Test                                                                 | Integration Test                                                                | End-to-End Test                                                                 |
+|------------------------------|---------------------------------------------------------------------------|----------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| **Python / Go Apps**         | Test functions/modules with mocks (e.g., cloud SDKs, file I/O)            | Test modules together with real/mocked API interactions                          | Full app runs: validate auth, proxy routing, API access across clouds            |
+| **Ansible (Packer Builds)**  | Molecule tests for individual roles with local Docker drivers             | Molecule or playbook tests for full role stacks in Packer                        | Build image, boot VM, verify config, access, monitoring on real infra            |
+| **Container Images**         | Unit test embedded scripts/configs (e.g., entrypoints, healthchecks)      | Run container, validate behavior/config in test runtime                          | Deploy to K8s, verify proxy/metadata/scan flows with platform controls           |
+| **Terraform**                | Terratest/kitchen-terraform to test individual modules and `plan` output | Deploy module sets in sandbox, verify interactions (e.g., VPC + IAM)             | Full infra workflows: provision, validate controls, teardown cleanly             |
