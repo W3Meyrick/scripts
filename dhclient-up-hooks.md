@@ -35,4 +35,9 @@ fetch_metadata() {
     log_error "Failed to get valid metadata from $path after $retries attempts"
     return 1
 }
+
+
+SUBNET_URI=$(fetch_metadata "/instance/network-interfaces/0/subnetwork" '^projects/[0-9]+/regions/[a-z0-9\-]+/subnetworks/[a-z][-a-z0-9]{0,62}[a-z0-9]$') || exit 1
+SUBNET_NAME="${SUBNET_URI##*/}"
+
 ```
