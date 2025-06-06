@@ -57,7 +57,7 @@ log_info()  { logger -t gcp-metadata-init "INFO: $*"; }
 log_warn()  { logger -t gcp-metadata-init "WARN: $*"; }
 log_error() { logger -t gcp-metadata-init "ERROR: $*"; }
 
-# Generic metadata fetch with retries, timeouts, HTTP checks, and regex validation
+# Fetch with retries, timeouts, regex validation
 fetch_metadata() {
     local path="$1"
     local regex="$2"
@@ -97,9 +97,9 @@ fetch_metadata() {
     return 1
 }
 
-# Use fetch_metadata with expected formats for each field
+# Metadata initialization logic
 init_metadata_variables() {
-    log_info "Starting GCP metadata fetch..."
+    log_info "Initializing GCP metadata..."
 
     INSTANCE_ID=$(fetch_metadata "/instance/id" '^[0-9]{10,20}$') || exit 1
     PROJECT_ID=$(fetch_metadata "/project/project-id" '^[a-z][a-z0-9\-]{4,61}[a-z0-9]$') || exit 1
@@ -111,16 +111,30 @@ init_metadata_variables() {
     NETWORK_URI=$(fetch_metadata "/instance/network-interfaces/0/network" '^projects/[0-9]+/networks/[a-z]([-a-z0-9]{0,61}[a-z0-9])?$') || exit 1
     NETWORK_NAME="${NETWORK_URI##*/}"
 
-    export INSTANCE_ID PROJECT_ID HOSTNAME ZONE NETWORK_NAME
+    NIC0_IP=$(fetch_metadata "/instance/network-interfaces/0/ip" '^([0-9]{1,3}\.){3}[0-9]{1,3}$') || exit 1
 
-    log_info "Fetched: INSTANCE_ID=$INSTANCE_ID, PROJECT_ID=$PROJECT_ID, HOSTNAME=$HOSTNAME, ZONE=$ZONE, NETWORK_NAME=$NETWORK_NAME"
+    NIC0_GATEWAY=$(fetch_metadata "/instance/network-interfaces/0/gateway" '^([0-9]{1,3}\.){3}[0-9]{1,3}$') || exit 1
+
+    NIC_COUNT=$(fetch_metadata "/instance/network-interfaces/" '^[0-9]+$') || exit 1
+
+    export INSTANCE_ID PROJECT_ID HOSTNAME ZONE NETWORK_NAME NIC0_IP NIC0_GATEWAY NIC_COUNT
+
+    log_info "Fetched metadata:"
+    log_info "  INSTANCE_ID=$INSTANCE_ID"
+    log_info "  PROJECT_ID=$PROJECT_ID"
+    log_info "  HOSTNAME=$HOSTNAME"
+    log_info "  ZONE=$ZONE"
+    log_info "  NETWORK_NAME=$NETWORK_NAME"
+    log_info "  NIC0_IP=$NIC0_IP"
+    log_info "  NIC0_GATEWAY=$NIC0_GATEWAY"
+    log_info "  NIC_COUNT=$NIC_COUNT"
 }
 
-# Only run during DHCP lease acquisition or renewal
+# Run only on DHCP BOUND or RENEW
 if [[ "${reason:-}" == "BOUND" || "${reason:-}" == "RENEW" ]]; then
     init_metadata_variables
-    # Hook downstream logic here
-    # /usr/local/bin/update_squid_config.sh "$PROJECT_ID" "$ZONE" "$NETWORK_NAME" ...
+    # Optional: downstream integration
+    # /usr/local/bin/update_squid_config.sh "$NIC0_IP" "$PROJECT_ID" "$ZONE" ...
 fi
 
 ```
