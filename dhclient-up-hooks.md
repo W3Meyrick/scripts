@@ -137,4 +137,17 @@ if [[ "${reason:-}" == "BOUND" || "${reason:-}" == "RENEW" ]]; then
     # /usr/local/bin/update_squid_config.sh "$NIC0_IP" "$PROJECT_ID" "$ZONE" ...
 fi
 
+NIC_COUNT=$(curl -s --connect-timeout 2 --max-time 5 \
+    -H "$HEADER" \
+    "${METADATA_URL}/instance/network-interfaces/?recursive=true" \
+    | grep -c '"mac":') || {
+        log_error "Failed to count network interfaces"
+        exit 1
+    }
+
+if [[ "$NIC_COUNT" -lt 1 ]]; then
+    log_error "NIC count appears invalid or zero"
+    exit 1
+fi
+
 ```
