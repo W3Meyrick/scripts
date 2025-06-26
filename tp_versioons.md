@@ -56,24 +56,29 @@ echo "$nodes_json" | jq -c '.[]' | while read -r node; do
 
     # Skip empty hostnames
     if [ -z "$hostname" ]; then
-        echo "Skipping node with missing hostname."
+        echo "⚠️  Skipping node with missing hostname."
         continue
     fi
+
+    echo "🔄 Checking $hostname ..."
 
     # Try SSH to get Teleport version
     version_output=$(tsh ssh "ec2-user@$hostname" "teleport version" 2>/dev/null)
     if [ $? -ne 0 ] || [ -z "$version_output" ]; then
         teleport_version=""
         ssh_status="SSH not available"
+        echo "❌ SSH failed for $hostname"
     else
         teleport_version=$(echo "$version_output" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' || echo "Unknown")
         ssh_status="OK"
+        echo "✅ $hostname → $teleport_version"
     fi
 
-    # Write to CSV, safely handling commas
+    # Write to CSV
     echo "\"$hostname\",\"$component\",\"$environment\",\"$project\",\"$role\",\"$teleport_version\",\"$ssh_status\"" >> "$OUTPUT"
 done
 
 echo "✅ Done. Results saved to $OUTPUT"
+
 
 ```
