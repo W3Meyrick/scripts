@@ -34,3 +34,34 @@ done
 
 echo "Done. Results saved to $OUTPUT"
 ```
+
+```bash
+#!/bin/bash
+
+# Output CSV file
+OUTPUT="teleport_nodes.csv"
+echo "hostname,component,environment,project,role,teleport_version" > "$OUTPUT"
+
+# Get the list of nodes in JSON format
+nodes_json=$(tsh ls --format=json)
+
+# Parse each node
+echo "$nodes_json" | jq -c '.[]' | while read -r node; do
+    hostname=$(echo "$node" | jq -r '.hostname')
+    component=$(echo "$node" | jq -r '.labels.component // empty')
+    environment=$(echo "$node" | jq -r '.labels.environment // empty')
+    project=$(echo "$node" | jq -r '.labels.project // empty')
+    role=$(echo "$node" | jq -r '.labels.role // empty')
+
+    # Try to SSH and get the teleport version
+    version=$(tsh ssh "$hostname" "teleport version 2>/dev/null" 2>/dev/null | head -n 1)
+
+    # Clean up output (e.g., 'Teleport v14.1.1 git...') → just the version number
+    version_clean=$(echo "$version" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+
+    # Write to CSV
+    echo "$hostname,$component,$environment,$project,$role,$version_clean" >> "$OUTPUT"
+done
+
+echo "Done. Results saved to $OUTPUT"
+```
