@@ -42,43 +42,42 @@ echo "Done. Results saved to $OUTPUT"
 OUTPUT="teleport_nodes.csv"
 echo "hostname,component,environment,project,role,teleport_version,ssh" > "$OUTPUT"
 
-# Get the list of nodes in JSON format
+# Get the list of nodes
 nodes_json=$(tsh ls --format=json)
 
-# Loop through each node
-echo "$nodes_json" | jq -c '.[]' | while read -r node; do
-    # Extract fields with defaults
+# Loop through each node safely
+while read -r node; do
     hostname=$(echo "$node" | jq -r '.spec.hostname // ""')
     component=$(echo "$node" | jq -r '.spec.labels.component // ""')
     environment=$(echo "$node" | jq -r '.spec.labels.environment // ""')
     project=$(echo "$node" | jq -r '.spec.labels.project // ""')
     role=$(echo "$node" | jq -r '.spec.labels.role // ""')
 
-    # Skip empty hostnames
     if [ -z "$hostname" ]; then
-        echo "⚠️  Skipping node with missing hostname."
+        echo "Skipping node with missing hostname."
         continue
     fi
 
-    echo "🔄 Checking $hostname ..."
+    echo "Checking $hostname..."
 
-    # Try SSH to get Teleport version
-    version_output=$(tsh ssh "ec2-user@$hostname" "teleport version" 2>/dev/null)
-    if [ $? -ne 0 ] || [ -z "$version_output" ]; then
+    # Attempt SSH to get the Teleport version
+    version_output=$(tsh ssh "ec2-user@$hostname" "teleport version" 2>/dev/null || true)
+
+    if [[ -z "$version_output" ]]; then
         teleport_version=""
         ssh_status="SSH not available"
-        echo "❌ SSH failed for $hostname"
+        echo "SSH failed for $hostname"
     else
         teleport_version=$(echo "$version_output" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' || echo "Unknown")
         ssh_status="OK"
-        echo "✅ $hostname → $teleport_version"
+        echo "$hostname is running Teleport version $teleport_version"
     fi
 
-    # Write to CSV
+    # Write row to CSV
     echo "\"$hostname\",\"$component\",\"$environment\",\"$project\",\"$role\",\"$teleport_version\",\"$ssh_status\"" >> "$OUTPUT"
-done
 
-echo "✅ Done. Results saved to $OUTPUT"
+done < <(echo "$nodes_json" | jq -c '.[]')
 
+echo "Done. Results saved to $OUTPUT"
 
 ```
