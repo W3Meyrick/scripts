@@ -40,28 +40,40 @@ echo "Done. Results saved to $OUTPUT"
 
 # Output CSV file
 OUTPUT="teleport_nodes.csv"
-echo "hostname,component,environment,project,role,teleport_version" > "$OUTPUT"
+echo "hostname,component,environment,project,role,teleport_version,ssh" > "$OUTPUT"
 
 # Get the list of nodes in JSON format
 nodes_json=$(tsh ls --format=json)
 
-# Parse each node
+# Loop through each node
 echo "$nodes_json" | jq -c '.[]' | while read -r node; do
-    hostname=$(echo "$node" | jq -r '.hostname')
-    component=$(echo "$node" | jq -r '.labels.component // empty')
-    environment=$(echo "$node" | jq -r '.labels.environment // empty')
-    project=$(echo "$node" | jq -r '.labels.project // empty')
-    role=$(echo "$node" | jq -r '.labels.role // empty')
+    # Extract fields with defaults
+    hostname=$(echo "$node" | jq -r '.spec.hostname // ""')
+    component=$(echo "$node" | jq -r '.spec.labels.component // ""')
+    environment=$(echo "$node" | jq -r '.spec.labels.environment // ""')
+    project=$(echo "$node" | jq -r '.spec.labels.project // ""')
+    role=$(echo "$node" | jq -r '.spec.labels.role // ""')
 
-    # Try to SSH and get the teleport version
-    version=$(tsh ssh "$hostname" "teleport version 2>/dev/null" 2>/dev/null | head -n 1)
+    # Skip empty hostnames
+    if [ -z "$hostname" ]; then
+        echo "Skipping node with missing hostname."
+        continue
+    fi
 
-    # Clean up output (e.g., 'Teleport v14.1.1 git...') → just the version number
-    version_clean=$(echo "$version" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+    # Try SSH to get Teleport version
+    version_output=$(tsh ssh "ec2-user@$hostname" "teleport version" 2>/dev/null)
+    if [ $? -ne 0 ] || [ -z "$version_output" ]; then
+        teleport_version=""
+        ssh_status="SSH not available"
+    else
+        teleport_version=$(echo "$version_output" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' || echo "Unknown")
+        ssh_status="OK"
+    fi
 
-    # Write to CSV
-    echo "$hostname,$component,$environment,$project,$role,$version_clean" >> "$OUTPUT"
+    # Write to CSV, safely handling commas
+    echo "\"$hostname\",\"$component\",\"$environment\",\"$project\",\"$role\",\"$teleport_version\",\"$ssh_status\"" >> "$OUTPUT"
 done
 
-echo "Done. Results saved to $OUTPUT"
+echo "✅ Done. Results saved to $OUTPUT"
+
 ```
