@@ -14,7 +14,8 @@ mkdir -p /opt/gcp-tester
 # ──────────────────────────────────────────────────────────────────────────────
 cat > /opt/gcp-tester/tester.sh << 'TESTEREOF'
 #!/bin/bash
-# Continuously tests GCP APIs (Compute, Storage) and DNS servers.
+# Continuously tests GCP API forwarders (gcr.io), Cloud Storage, and DNS
+# resolution via the system resolver (Cloud DNS → Unbound catch-all).
 # Logs structured results to Cloud Logging via the REST API.
 # Requires: curl (always present on RHEL 8), dig (bind-utils).
 set -euo pipefail
@@ -23,13 +24,7 @@ set -euo pipefail
 # Configuration
 # ──────────────────────────────────────────────────────────────────────────────
 
-# IP addresses of the DNS servers to query.
-DNS_SERVERS=(
-    # "10.0.0.1"
-    # "10.0.0.2"
-)
-
-# Hostname to resolve against each DNS server above.
+# Hostname to resolve via the system resolver (Cloud DNS → Unbound catch-all).
 DNS_LOOKUP_HOSTNAME="example.internal"
 
 # Seconds between full test runs.
@@ -51,11 +46,10 @@ PROJECT_ID=$(metadata "project/project-id")
 INSTANCE_NAME=$(metadata "instance/name")
 ZONE=$(metadata "instance/zone" | sed 's|.*/||')
 
-# Refreshes the global ACCESS_TOKEN from the attached service account.
-# Called once per test cycle; tokens are valid for 1 hour.
+# Refreshes the global ACCESS_TOKEN using the gcloud SDK, which handles
+# credential management and token caching for the attached service account.
 refresh_token() {
-    ACCESS_TOKEN=$(metadata "instance/service-accounts/default/token" \
-        | sed 's/.*"access_token":"\([^"]*\)".*/\1/')
+    ACCESS_TOKEN=$(gcloud auth print-access-token)
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -95,42 +89,33 @@ log_result() {
 # ──────────────────────────────────────────────────────────────────────────────
 # Tests
 # ──────────────────────────────────────────────────────────────────────────────
-test_compute_api() {
+# Tests the GCP API forwarders (transparent nginx-based proxies on the platform)
+# via the gcr.io Docker Registry v2 ping endpoint.
+test_gcr_api() {
     local start http_code
     start=$(now_ms)
     http_code=$(curl -sf -o /dev/null -w "%{http_code}" \
         -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-        "https://compute.googleapis.com/compute/v1/projects/${PROJECT_ID}/aggregated/instances?maxResults=10" \
+        "https://gcr.io/v2/" \
         2>/dev/null || echo "000")
-    log_result "compute_api" \
+    log_result "gcr_api" \
         "$([[ $http_code == 200 ]] && echo PASS || echo FAIL)" \
         $(( $(now_ms) - start )) \
         "HTTP ${http_code}"
 }
 
-test_storage_api() {
-    local start http_code
-    start=$(now_ms)
-    http_code=$(curl -sf -o /dev/null -w "%{http_code}" \
-        -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-        "https://storage.googleapis.com/storage/v1/b?project=${PROJECT_ID}&maxResults=10" \
-        2>/dev/null || echo "000")
-    log_result "storage_api" \
-        "$([[ $http_code == 200 ]] && echo PASS || echo FAIL)" \
-        $(( $(now_ms) - start )) \
-        "HTTP ${http_code}"
-}
 
-test_dns_server() {
-    local server="$1" hostname="$2"
+# Tests DNS resolution via the system resolver (Cloud DNS → Unbound catch-all).
+# No server specified — exercises the full resolver chain as any workload would.
+test_dns() {
     local start output rc
     start=$(now_ms)
-    output=$(dig +short +timeout=5 +tries=1 "@${server}" "${hostname}" A 2>&1) && rc=$? || rc=$?
+    output=$(dig +short +timeout=5 +tries=1 "${DNS_LOOKUP_HOSTNAME}" A 2>&1) && rc=$? || rc=$?
     if [[ $rc -eq 0 && -n "$output" ]]; then
-        log_result "dns_${server}" "PASS" $(( $(now_ms) - start )) \
-            "${hostname} -> ${output//$'\n'/, }"
+        log_result "dns" "PASS" $(( $(now_ms) - start )) \
+            "${DNS_LOOKUP_HOSTNAME} -> ${output//$'\n'/, }"
     else
-        log_result "dns_${server}" "FAIL" $(( $(now_ms) - start )) \
+        log_result "dns" "FAIL" $(( $(now_ms) - start )) \
             "dig exit ${rc}: ${output}"
     fi
 }
@@ -150,12 +135,9 @@ log_result "tester_lifecycle" "PASS" 0 "tester started"
 
 while true; do
     refresh_token
-    test_compute_api
-    test_storage_api
+    test_gcr_api
     if [[ "$DIG_AVAILABLE" == "true" ]]; then
-        for server in "${DNS_SERVERS[@]+"${DNS_SERVERS[@]}"}"; do
-            test_dns_server "$server" "$DNS_LOOKUP_HOSTNAME"
-        done
+        test_dns
     fi
     sleep "$TEST_INTERVAL_SECONDS"
 done

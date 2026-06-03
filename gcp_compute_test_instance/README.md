@@ -12,6 +12,7 @@ No Python or additional packages are required — the tester uses only `curl` an
 |------|---------|
 | `create-instance.sh` | Run once from your workstation to create the VM |
 | `startup-script.sh` | Passed to the VM as a metadata startup script; runs on every boot |
+| `test-api-proxy.sh` | Run from your workstation during the DR window to test the API proxy |
 
 ---
 
@@ -136,6 +137,51 @@ gcloud logging read \
 Timestamps must be in ISO 8601 UTC format, e.g. `2026-06-03T14:00:00Z`.
 
 Cloud Logging retains logs for 30 days by default, so the export does not need to be run immediately after the test window.
+
+---
+
+---
+
+## API proxy test (workstation)
+
+`test-api-proxy.sh` is run from your workstation during the DR test window. It tests that gcloud commands work correctly through the API proxy and logs results in the same JSON structure as the VM tester, so both can be queried together for the report.
+
+**Prerequisites:**
+- `gcloud` CLI installed and authenticated (`gcloud auth login`)
+- The API proxy configured in gcloud before running:
+  ```bash
+  gcloud config set proxy/type http
+  gcloud config set proxy/address YOUR_PROXY_HOST
+  gcloud config set proxy/port YOUR_PROXY_PORT
+  ```
+  Or via environment variable: `HTTPS_PROXY=http://host:port`
+- Authenticated user must have `roles/logging.logWriter` on the project if `USE_CLOUD_LOGGING="true"`
+
+**Configuration** — set at the top of the file:
+
+| Variable | Description |
+|----------|-------------|
+| `PROJECT_ID` | GCP project to test against |
+| `TEST_DURATION_MINUTES` | How long to run (default: `60`) |
+| `TEST_INTERVAL_SECONDS` | Seconds between test cycles (default: `60`) |
+| `USE_CLOUD_LOGGING` | `true` to also write to Cloud Logging; `false` for local file only |
+
+**Run:**
+```bash
+./test-api-proxy.sh
+```
+
+Results are always written to a local `api-proxy-test-<timestamp>.jsonl` file. If `USE_CLOUD_LOGGING="true"`, they are also written to Cloud Logging under the log name `gcp-api-proxy-test`.
+
+**Query proxy test logs for the DR report:**
+```bash
+gcloud logging read \
+  'logName="projects/PROJECT_ID/logs/gcp-api-proxy-test" AND timestamp>="START_TIME" AND timestamp<="END_TIME"' \
+  --project=PROJECT_ID \
+  --order=asc \
+  --format=json \
+  > dr-test-proxy.json
+```
 
 ---
 
