@@ -1,0 +1,37 @@
+---
+- name: Configure GCP API and DNS tester
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Create tester directory
+      file:
+        path: /opt/gcp-tester
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Copy tester script
+      copy:
+        src: files/tester.sh
+        dest: /opt/gcp-tester/tester.sh
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Install systemd service unit
+      copy:
+        src: files/gcp-tester.service
+        dest: /etc/systemd/system/gcp-tester.service
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Enable gcp-tester service
+      systemd:
+        name: gcp-tester
+        enabled: true
+        daemon_reload: true
+      # Service is enabled but not started here — SA credentials and network
+      # are not available during the Packer build. It will start on first boot.

@@ -1,0 +1,17 @@
+[Unit]
+Description=GCP API and DNS Continuous Tester
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /opt/gcp-tester/tester.sh
+Restart=always
+RestartSec=15
+ExecStartPre=/bin/sleep 30
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gcp-tester
+
+[Install]
+WantedBy=multi-user.target

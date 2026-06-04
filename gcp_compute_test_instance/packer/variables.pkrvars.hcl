@@ -1,0 +1,6 @@
+project_id           = "YOUR_PROJECT_ID"
+zone                 = "us-central1-a"
+network              = "YOUR_NETWORK"
+subnetwork           = "YOUR_SUBNET"
+source_image_family  = "YOUR_RHEL_IMAGE_FAMILY"
+source_image_project = "YOUR_IMAGE_PROJECT"
