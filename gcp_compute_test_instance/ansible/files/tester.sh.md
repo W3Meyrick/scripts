@@ -1,4 +1,4 @@
-cdcd #!/bin/bash
+#!/bin/bash
 # Continuously tests GCP API forwarders (gcr.io) and DNS resolution
 # via the system resolver (Cloud DNS → Unbound catch-all).
 # Logs structured results to Cloud Logging via the REST API.
@@ -12,13 +12,10 @@ set -euo pipefail
 # Hostname to resolve via the system resolver (Cloud DNS → Unbound catch-all).
 DNS_LOOKUP_HOSTNAME="example.internal"
 
-# IP addresses of the API proxy instances (Squid, port 3128).
-# Each is tested independently. curl --proxy scopes the proxy strictly to that
-# call — no other tests are affected. Leave the array empty to skip proxy tests.
-PROXY_IPS=(
-    # "10.0.0.1"
-    # "10.0.0.2"
-)
+# IP address of the API proxy load balancer (Squid, port 3128).
+# curl --proxy scopes this strictly to the proxy test — no other tests are affected.
+# Leave empty to skip the proxy test.
+PROXY_IP=""
 
 # Seconds between full test runs.
 TEST_INTERVAL_SECONDS=60
@@ -96,18 +93,17 @@ test_gcr_api() {
         "HTTP ${http_code}"
 }
 
-# Tests a single API proxy instance by routing the gcr.io ping through it.
+# Tests the API proxy load balancer by routing the gcr.io ping through it.
 # curl --proxy scopes the proxy strictly to this call — no other tests are affected.
 test_api_proxy() {
-    local proxy_ip="$1"
     local start http_code
     start=$(now_ms)
     http_code=$(curl -sf -o /dev/null -w "%{http_code}" \
-        --proxy "http://${proxy_ip}:3128" \
+        --proxy "http://${PROXY_IP}:3128" \
         -H "Authorization: Bearer ${ACCESS_TOKEN}" \
         "https://gcr.io/v2/" \
         2>/dev/null || echo "000")
-    log_result "api_proxy_${proxy_ip}" \
+    log_result "api_proxy" \
         "$([[ $http_code == 200 ]] && echo PASS || echo FAIL)" \
         $(( $(now_ms) - start )) \
         "HTTP ${http_code}"
@@ -144,9 +140,7 @@ log_result "tester_lifecycle" "PASS" 0 "tester started"
 while true; do
     refresh_token
     test_gcr_api
-    for proxy_ip in "${PROXY_IPS[@]+"${PROXY_IPS[@]}"}"; do
-        test_api_proxy "$proxy_ip"
-    done
+    [[ -n "$PROXY_IP" ]] && test_api_proxy
     if [[ "$DIG_AVAILABLE" == "true" ]]; then
         test_dns
     fi
