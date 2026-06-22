@@ -272,3 +272,23 @@ Strong candidates outline **tooling choices, workflows, and developer enablement
 - **Beginner roles (Junior DevOps / SRE I):** Focus on Q1 → Q10  
 - **Mid-level roles:** Be comfortable with Q6 → Q15  
 - **Senior & Platform Engineers:** Expect Q11 → Q20  
+
+
+1. What happens when a systemd service fails to start — how do you troubleshoot it?
+
+Good answer: Check systemctl status <service> for the immediate error, then journalctl -u <service> -xe for detailed logs. Look at the unit file (systemctl cat <service>) for misconfigured paths, permissions, or dependencies. Check SELinux denials with ausearch -m avc -ts recent since SELinux often blocks things silently. Verify the binary/config it depends on actually exists and has correct ownership.
+2. How do file permissions and SELinux interact?
+
+Good answer: They're independent, additive layers. Standard Unix permissions (owner/group/other, rwx) are checked first; SELinux context (type enforcement) is checked second. A file can have 777 permissions and still be denied access if its SELinux context doesn't match what the process is allowed to touch. Good engineers know to check ls -Z and ps -Z, and use semanage/restorecon rather than just disabling SELinux to "fix" access issues.
+3. How do you extend an LVM logical volume that's running out of space?
+
+Good answer: Confirm free space in the volume group with vgs/vgdisplay. Extend the logical volume with lvextend -L +<size> /dev/vgname/lvname (or -r to resize the filesystem in the same step). Then grow the filesystem with resize2fs (ext4) or xfs_growfs (XFS) if not done automatically. Bonus points if they mention checking underlying physical volumes/disk first if the VG itself is out of space.
+4. Server has high load average but low CPU usage — what's going on?
+
+Good answer: Load average includes processes waiting on I/O, not just CPU-bound ones. Check iostat and vmstat for disk wait, and ps for processes in D state (uninterruptible sleep, usually disk I/O). Common causes: slow/failing disk, NFS mount issues, or a saturated network filesystem. This question is good for separating people who actually understand load average from those who just memorized "high load = busy CPU."
+5. df shows a full filesystem, but you can't find large files accounting for it. What's happening?
+
+Good answer: Likely a deleted file that's still open by a running process — disk space isn't released until the file descriptor closes. Find it with lsof | grep deleted (or lsof +L1). Fix by restarting the offending process or, if urgent, truncating the file via its fd in /proc/<pid>/fd/. Strong candidates also mention reserved blocks (tune2fs -l) as another possible culprit on ext-based filesystems.
+6. How do you patch RHEL servers for a CVE across a fleet with minimal downtime?
+
+Good answer: Use a configuration management tool (Ansible/Satellite) to stage and roll out patches in batches rather than all at once, ideally behind a load balancer so nodes can be drained and patched one at a time. Test in a staging environment first. Snapshot or have a rollback plan (LVM snapshot, or dnf history undo). Mention dnf updateinfo or Red Hat Satellite/Insights for tracking which CVEs apply to which hosts.
